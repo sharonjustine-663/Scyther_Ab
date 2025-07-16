@@ -1,0 +1,138 @@
+hashfunction H;
+
+usertype ConstVal;
+
+usertype Timestamp;
+
+usertype Acknowledgement;
+
+const XOR:Function;
+
+const CON:Function;
+
+const idsn:ConstVal;
+
+const idmn: ConstVal;
+
+const idan: ConstVal;
+
+const asn:ConstVal;
+
+const amn:ConstVal;
+
+//const rsn:ConstVal;
+
+const T1:Timestamp;
+
+const CN:Agent;
+
+//WN1
+
+macro xsn=H(CON(CON(CON(asn,pk(WN)),pk(CN)),pk(MN)));
+
+macro vmn=H(CON(CON(CON(amn,pk(AN)),pk(CN)),pk(MN)));
+
+macro puidwn=H(XOR(idsn,pk(CN)));
+
+macro puidmn=H(XOR(idmn,pk(MN)));
+
+macro puidan=H(XOR(idan,pk(MN)));
+
+macro z = H(XOR(H(smn),pk(CN)));
+
+macro alpha=XOR(H(smn),ran);
+
+macro beta=XOR(H(CON(H(smn),ran)),z);
+
+macro ack = H(XOR(Ack,rsn));
+
+
+protocol wban(WN,MN,AN)\{
+
+
+
+	role WN\{
+		const rsn:ConstVal;
+
+		var Ack:Acknowledgement;
+
+		macro asn =H(XOR(H(rsn),pk(CN)));
+
+
+		send\_1(WN,MN,puidwn,xsn,\{H(rsn)\}pk(MN));
+
+		claim(WN,Secret,rsn);
+		claim(WN,Secret,asn);
+		claim(WN,Niagree);
+		claim(WN,Nisynch);
+ 
+
+	\}
+
+	role MN\{
+		var rsn:ConstVal;
+		fresh smn: ConstVal;
+		//var alpha;
+		//var beta;
+		var ran:Nonce;
+		fresh Ack:Acknowledgement;
+		
+		recv\_1(WN,MN,puidwn,xsn,\{H(rsn)\}pk(MN));
+
+
+		macro y = H(XOR(H(rsn),pk(CN)));
+		macro xmn = H(CON(CON(CON(y,pk(WN)),pk(CN)),pk(MN)));
+		match(xmn,xsn);
+		
+		
+		macro amn = H(XOR(H(smn),pk(CN)));
+
+		send\_2(MN,AN,puidmn,vmn);
+		send\_3(MN,AN,\{H(smn)\}pk(AN));
+
+		recv\_4(AN,MN,alpha,beta,puidan);
+		
+		macro w = XOR(H(smn),ran);
+		match(w,alpha);
+		
+
+		claim(MN,Secret,rsn);
+		claim(MN,Secret,asn);
+		claim(MN,Secret,smn);
+		claim(MN,Secret,amn);
+		claim(MN,Secret,ran);
+		claim(MN,Niagree);
+		claim(MN,Nisynch);
+		claim(MN,Alive);
+		claim(MN,Weakagree);
+	\}
+
+	role AN\{
+		var smn:ConstVal;
+		fresh ran: Nonce;
+
+		recv\_2(MN,AN,puidmn,vmn);
+		recv\_3(MN,AN,\{H(smn)\}pk(AN));
+
+		//macro z = H(XOR(H(smn),pk(CN)));
+
+		macro xan = H(CON(CON(CON(z,pk(AN)),pk(CN)),pk(MN)));
+		match(xan,vmn);
+
+		//macro alpha=XOR(H(smn),ran);
+
+		//macro beta=XOR(H(CON(H(smn),ran)),z);
+		
+		send\_4(AN,MN,alpha,beta,puidan);
+
+		claim(AN,Secret,amn);
+		claim(AN,Secret,smn);
+		claim(AN,Secret,ran);
+		claim(AN,Niagree);
+		claim(AN,Nisynch);
+		claim(AN,Alive);
+		claim(AN,Weakagree);
+
+	\}
+
+\}
